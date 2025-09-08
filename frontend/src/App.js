@@ -5,6 +5,7 @@ import Header from './components/Header';
 import Search from './components/Search';
 import ImageCard from './ImageCard';
 import { Container, Row, Col } from 'react-bootstrap';
+import Spinner from './components/Spinner';
 import Welcome from './components/Welcome';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5050';
@@ -12,22 +13,24 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5050';
 const App = () => {
   const [word, setWord] = useState('');
   const [images, setImages] = useState([]);
-  
-   const getSavedImages = async () => {
+  const [loading, setLoading] = useState(true);
+
+  const getSavedImages = async () => {
     try {
       const res = await axios.get(`${API_URL}/images`)
-      setImages(res.data || [])
+      setImages(res.data || []);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching images:", error)
-      }
     }
+  }
 
-  useEffect(() => {getSavedImages()}, [])
+  useEffect(() => { getSavedImages() }, [])
 
   const handleSearchSubmit = async (e) => {
     e.preventDefault();
 
-    
+
     try {
       const res = await axios.get(`${API_URL}/new-image?query=${word}`);
       setImages([{ ...res.data, title: word }, ...images]);
@@ -37,29 +40,29 @@ const App = () => {
 
     setWord('');
   };
-  
+
   const handleDeleteImage = async (id) => {
     try {
       const res = await axios.delete(`${API_URL}/images/${id}`);
-      if(res.data?.deleted_id) {
+      if (res.data?.deleted_id) {
         setImages(images.filter((image) => image.id !== id));
       }
     } catch (error) {
       console.log(error);
     }
-    
+
   };
 
-  const handleSaveimage = async (id) => { 
+  const handleSaveimage = async (id) => {
     const imageToBeSaved = images.find((image) => image.id === id);
     imageToBeSaved.saved = true;
-    
+
     try {
       const res = await axios.post(`${API_URL}/images`, imageToBeSaved);
       if (res.data?.inserted_id) {
         setImages(
-          images.map((image) => 
-            image.id === id ? {...image, saved: true} : image
+          images.map((image) =>
+            image.id === id ? { ...image, saved: true } : image
           )
         );
       }
@@ -70,19 +73,20 @@ const App = () => {
   return (
     <div>
       <Header title="Images Gallery" />
-      <Search word={word} setWord={setWord} handleSubmit={handleSearchSubmit} />
-      <Container className='mt-4'>
-        {images.length ? (
-          <Row xs={1} md={2} lg={3}>
-          {images.map((image, i) => (
-            <Col key={i} className='pb-3'>
-              <ImageCard image={image} deleteImage={handleDeleteImage} saveImage = {handleSaveimage}/>
-            </Col>
-          ))}
-        </Row>) : (
-          <Welcome />
+      {loading ? <Spinner /> : <><Search word={word} setWord={setWord} handleSubmit={handleSearchSubmit} />
+        <Container className='mt-4'>
+          {images.length ? (
+            <Row xs={1} md={2} lg={3}>
+              {images.map((image, i) => (
+                <Col key={i} className='pb-3'>
+                  <ImageCard image={image} deleteImage={handleDeleteImage} saveImage={handleSaveimage} />
+                </Col>
+              ))}
+            </Row>) : (
+            <Welcome />
           )}
-      </Container>
+        </Container></>}
+
     </div>
   );
 }
