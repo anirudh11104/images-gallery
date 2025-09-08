@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Header from './components/Header';
@@ -9,14 +9,25 @@ import Welcome from './components/Welcome';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5050';
 
-
 const App = () => {
   const [word, setWord] = useState('');
   const [images, setImages] = useState([]);
+  
+   const getSavedImages = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/images`)
+      setImages(res.data || [])
+    } catch (error) {
+      console.error("Error fetching images:", error)
+      }
+    }
+
+  useEffect(() => {getSavedImages()}, [])
 
   const handleSearchSubmit = async (e) => {
     e.preventDefault();
 
+    
     try {
       const res = await axios.get(`${API_URL}/new-image?query=${word}`);
       setImages([{ ...res.data, title: word }, ...images]);
@@ -27,7 +38,6 @@ const App = () => {
     setWord('');
   };
   
-
   const handleDeleteImage = (id) => {
     setImages(images.filter((image) => image.id !== id));
   }
